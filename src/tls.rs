@@ -1,11 +1,17 @@
 //!secure connection over TLS
+#[cfg(all(not(feature = "std"), feature = "sgx"))]
+use crate::sgx_reexport_prelude::*;
 
 use crate::error::Error as HttpError;
+#[cfg(feature = "std")]
+use std::fs::File;
 use std::{
-    fs::File,
     io::{self, BufReader},
     path::Path,
 };
+
+#[cfg(all(not(feature = "std"), feature = "sgx"))]
+use std::untrusted::fs::File;
 
 #[cfg(feature = "native-tls")]
 use std::io::prelude::*;
@@ -13,8 +19,8 @@ use std::io::prelude::*;
 #[cfg(feature = "rust-tls")]
 use crate::error::ParseErr;
 
-#[cfg(not(any(feature = "native-tls", feature = "rust-tls")))]
-compile_error!("one of the `native-tls` or `rust-tls` features must be enabled");
+//#[cfg(not(any(feature = "native-tls", feature = "rust-tls")))]
+//compile_error!("one of the `native-tls` or `rust-tls` features must be enabled");
 
 ///wrapper around TLS Stream,
 ///depends on selected TLS library

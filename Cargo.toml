@@ -10,25 +10,43 @@ categories = ["web-programming::http-client", "network-programming"]
 keywords = ["http", "client", "request"]
 edition = "2018"
 
+#[dependencies.native-tls]
+#version = "^0.2"
+#optional = true
+
 [dependencies]
-unicase = "^2.6"
+# sgx dependencies
+sgx_tstd = { branch = "master", git = "https://github.com/apache/teaclave-sgx-sdk.git", optional = true, features = ["net", "untrusted_time"] }
+
+# sgx enabled external libraries
+unicase_sgx = { package = "unicase", git = "https://github.com/mesalock-linux/unicase-sgx", optional = true}
+rustls_sgx  = { package = "rustls", git = "https://github.com/mesalock-linux/rustls", branch = "mesalock_sgx", optional = true }
+webpki_sgx  = { package = "webpki", git = "https://github.com/mesalock-linux/webpki", branch = "mesalock_sgx", optional = true }
+webpki-roots_sgx = { package = "webpki-roots", git = "https://github.com/mesalock-linux/webpki-roots", branch = "mesalock_sgx", optional = true }
+
+# std compatible external libraries (make sure these versions match with the sgx-enabled ones above)
+unicase = { version = "2.6", optional = true }
+rustls = { version = "0.19", optional = true }
+webpki = { version = "0.21", optional = true }
+webpki-roots = { version = "0.21", optional = true }
+
 
 [features]
-default = ["native-tls"]
-rust-tls = ["rustls", "webpki", "webpki-roots"]
+default = ["rust-tls", "std"]
+rust-tls = []
+sgx = [
+    "sgx_tstd",
+    "unicase_sgx",
+    "rustls_sgx",
+    "webpki_sgx",
+    "webpki-roots_sgx"
+]
+std = [
+    "unicase",
+    "rustls",
+    "webpki",
+    "webpki-roots",
+]
 
-[dependencies.native-tls]
-version = "^0.2"
-optional = true
-
-[dependencies.rustls]
-version = "^0.19"
-optional = true
-
-[dependencies.webpki]
-version = "^0.21"
-optional = true
-
-[dependencies.webpki-roots]
-version = "^0.21"
-optional = true
+[patch."https://github.com/apache/teaclave-sgx-sdk.git"]
+sgx_tstd = { version = "1.1.4", git = "https://github.com/haerdib/incubator-teaclave-sgx-sdk", branch = "master"}

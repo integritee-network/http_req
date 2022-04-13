@@ -25,6 +25,7 @@ impl error::Error for ParseErr {
 }
 
 impl fmt::Display for ParseErr {
+    #[allow(deprecated)]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::ParseErr::*;
 
@@ -73,6 +74,7 @@ impl error::Error for Error {
 }
 
 impl fmt::Display for Error {
+    #[allow(deprecated)]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Error::*;
 

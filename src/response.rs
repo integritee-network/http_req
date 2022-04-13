@@ -1,4 +1,6 @@
 //! parsing server response
+#[cfg(all(not(feature = "std"), feature = "sgx"))]
+use crate::sgx_reexport_prelude::*;
 use crate::{
     error::{Error, ParseErr},
     uri::Uri,
@@ -8,6 +10,7 @@ use std::{
     fmt,
     io::Write,
     str,
+    string::{String, ToString},
 };
 use unicase::Ascii;
 
