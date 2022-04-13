@@ -11,7 +11,9 @@ use std::{
     io::{self, ErrorKind, Read, Write},
     net::{TcpStream, ToSocketAddrs},
     path::Path,
+    string::{String, ToString},
     time::{Duration, Instant},
+    vec::Vec,
 };
 
 const CR_LF: &str = "\r\n";

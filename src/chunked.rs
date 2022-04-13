@@ -4,7 +4,11 @@
 //! [1]: https://golang.google.cn/src/net/http/internal/chunked.go
 //!
 
-use std::io::{self, BufRead, BufReader, Error, ErrorKind, Read};
+use std::{
+    io::{self, BufRead, BufReader, Error, ErrorKind, Read},
+    string::ToString,
+    vec::Vec,
+};
 
 const MAX_LINE_LENGTH: usize = 4096;
 const CR_LF: [u8; 2] = [b'\r', b'\n'];

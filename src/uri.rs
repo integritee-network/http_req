@@ -5,7 +5,7 @@ use std::{
     fmt,
     ops::{Index, Range},
     str,
-    string::ToString,
+    string::{String, ToString},
 };
 
 const HTTP_PORT: u16 = 80;
