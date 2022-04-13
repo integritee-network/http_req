@@ -13,8 +13,7 @@
 //!    println!("Status: {} {}", res.status_code(), res.reason());
 //!}
 //!```
-#![cfg_attr(all(feature = "sgx", not(target_env = "sgx")), no_std)]
-//#![cfg_attr(target_env = "sgx", feature(rustc_private))]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(all(feature = "std", feature = "sgx"))]
 compile_error!("feature \"std\" and feature \"sgx\" cannot be enabled at the same time");
