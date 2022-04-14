@@ -95,6 +95,13 @@ impl Default for Config {
 
 impl Config {
     #[cfg(feature = "native-tls")]
+    pub fn empty_root_store() -> Self {
+        Config {
+            extra_root_certs: vec![],
+        }
+    }
+
+    #[cfg(feature = "native-tls")]
     pub fn add_root_cert_file_pem(&mut self, file_path: &Path) -> Result<&mut Self, HttpError> {
         let f = File::open(file_path)?;
         let f = BufReader::new(f);
@@ -130,9 +137,33 @@ impl Config {
     }
 
     #[cfg(feature = "rust-tls")]
+    pub fn empty_root_store() -> Self {
+        let mut config = rustls::ClientConfig::new();
+        config.root_store.roots = vec![];
+
+        Config {
+            client_config: std::sync::Arc::new(config),
+        }
+    }
+
+    #[cfg(feature = "rust-tls")]
     pub fn add_root_cert_file_pem(&mut self, file_path: &Path) -> Result<&mut Self, HttpError> {
         let f = File::open(file_path)?;
         let mut f = BufReader::new(f);
+        let config = std::sync::Arc::make_mut(&mut self.client_config);
+        let _ = config
+            .root_store
+            .add_pem_file(&mut f)
+            .map_err(|_| HttpError::from(ParseErr::Invalid))?;
+        Ok(self)
+    }
+
+    #[cfg(feature = "rust-tls")]
+    pub fn add_root_cert_content_pem_file(
+        &mut self,
+        content: &str,
+    ) -> Result<&mut Self, HttpError> {
+        let mut f = BufReader::new(content.as_bytes());
         let config = std::sync::Arc::make_mut(&mut self.client_config);
         let _ = config
             .root_store

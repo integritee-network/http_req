@@ -909,6 +909,41 @@ impl<'a> Request<'a> {
             self.inner.send(&mut stream, writer)
         }
     }
+
+    ///Sends HTTP request with the server root certificate to verify
+    ///
+    ///There are no other trusted root certificates. The connection will only be established
+    ///if the supplied certificate matches the server's root certificate.
+    ///
+    ///Creates `TcpStream` (and wraps it with `TlsStream` if needed). Writes request message
+    ///to created stream. Returns response for this request. Writes response's body to `writer`.
+    pub fn send_with_pem_certificate<T: Write>(
+        &self,
+        writer: &mut T,
+        certificate_content: Option<String>,
+    ) -> Result<Response, error::Error> {
+        let host = self.inner.uri.host().unwrap_or("");
+        let port = self.inner.uri.corr_port();
+        let mut stream = match self.connect_timeout {
+            Some(timeout) => connect_timeout(host, port, timeout)?,
+            None => TcpStream::connect((host, port))?,
+        };
+
+        stream.set_read_timeout(self.read_timeout)?;
+        stream.set_write_timeout(self.write_timeout)?;
+
+        if self.inner.uri.scheme() == "https" {
+            let mut cnf = tls::Config::empty_root_store();
+            let cnf = match certificate_content {
+                Some(c) => cnf.add_root_cert_content_pem_file(&c)?,
+                None => &mut cnf,
+            };
+            let mut stream = cnf.connect(host, stream)?;
+            self.inner.send(&mut stream, writer)
+        } else {
+            self.inner.send(&mut stream, writer)
+        }
+    }
 }
 
 ///Connects to target host with a timeout
