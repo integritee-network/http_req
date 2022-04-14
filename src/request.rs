@@ -910,10 +910,10 @@ impl<'a> Request<'a> {
         }
     }
 
-    ///Sends HTTP request with the server root certificate to verify
-    ///
-    ///There are no other trusted root certificates. The connection will only be established
-    ///if the supplied certificate matches the server's root certificate.
+    ///Sends HTTP request.The connection will only be established if the supplied certificate
+    ///matches the server's root certificate.
+    ///Supply the content of the server's root certificate as a String. There are no predefined trusted
+    ///root certificates in the tls config.
     ///
     ///Creates `TcpStream` (and wraps it with `TlsStream` if needed). Writes request message
     ///to created stream. Returns response for this request. Writes response's body to `writer`.
