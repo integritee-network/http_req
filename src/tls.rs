@@ -104,9 +104,21 @@ impl Config {
     #[cfg(feature = "native-tls")]
     pub fn add_root_cert_file_pem(&mut self, file_path: &Path) -> Result<&mut Self, HttpError> {
         let f = File::open(file_path)?;
-        let f = BufReader::new(f);
+        self.add_pem_file(&mut BufReader::new(f))
+    }
+
+    #[cfg(feature = "native-tls")]
+    pub fn add_root_cert_content_pem_file(
+        &mut self,
+        content: &str,
+    ) -> Result<&mut Self, HttpError> {
+        self.add_pem_file(&mut BufReader::new(content.as_bytes()))
+    }
+
+    #[cfg(feature = "native-tls")]
+    fn add_pem_file(&mut self, rd: &mut dyn io::BufRead) -> Result<&mut Self, HttpError> {
         let mut pem_crt = vec![];
-        for line in f.lines() {
+        for line in rd.lines() {
             let line = line?;
             let is_end_cert = line.contains("-----END");
             pem_crt.append(&mut line.into_bytes());
@@ -149,13 +161,7 @@ impl Config {
     #[cfg(feature = "rust-tls")]
     pub fn add_root_cert_file_pem(&mut self, file_path: &Path) -> Result<&mut Self, HttpError> {
         let f = File::open(file_path)?;
-        let mut f = BufReader::new(f);
-        let config = std::sync::Arc::make_mut(&mut self.client_config);
-        let _ = config
-            .root_store
-            .add_pem_file(&mut f)
-            .map_err(|_| HttpError::from(ParseErr::Invalid))?;
-        Ok(self)
+        self.add_pem_file(&mut BufReader::new(f))
     }
 
     #[cfg(feature = "rust-tls")]
@@ -163,11 +169,15 @@ impl Config {
         &mut self,
         content: &str,
     ) -> Result<&mut Self, HttpError> {
-        let mut f = BufReader::new(content.as_bytes());
+        self.add_pem_file(&mut BufReader::new(content.as_bytes()))
+    }
+
+    #[cfg(feature = "rust-tls")]
+    fn add_pem_file(&mut self, rd: &mut dyn io::BufRead) -> Result<&mut Self, HttpError> {
         let config = std::sync::Arc::make_mut(&mut self.client_config);
         let _ = config
             .root_store
-            .add_pem_file(&mut f)
+            .add_pem_file(rd)
             .map_err(|_| HttpError::from(ParseErr::Invalid))?;
         Ok(self)
     }
