@@ -5,6 +5,7 @@ use crate::{
     tls,
     uri::Uri,
 };
+use log::*;
 use std::{
     convert::TryFrom,
     fmt,
@@ -914,7 +915,7 @@ impl<'a> Request<'a> {
             };
             self.send_with_config(writer, Some(cnf))
         } else {
-            println!("Send with certificate, but not a https request!");
+            error!("Send with certificate, but not a https request!");
             Err(error::Error::Tls)
         }
     }
@@ -939,7 +940,7 @@ impl<'a> Request<'a> {
         if self.inner.uri.scheme() == "https" {
             let mut stream = config
                 .ok_or_else(|| {
-                    println!("No tls config defined for the https request!");
+                    error!("No tls config defined for the https request!");
                     error::Error::Tls
                 })?
                 .connect(host, stream)?;

@@ -25,6 +25,7 @@ webpki_sgx  = { package = "webpki", git = "https://github.com/mesalock-linux/web
 webpki-roots_sgx = { package = "webpki-roots", git = "https://github.com/mesalock-linux/webpki-roots", branch = "mesalock_sgx", optional = true }
 
 # std compatible external libraries (make sure these versions match with the sgx-enabled ones above)
+log = { version = "0.4", default-features = false }
 unicase = { version = "2.6", optional = true }
 rustls = { version = "0.19", optional = true }
 webpki = { version = "0.21", optional = true }
@@ -42,6 +43,7 @@ sgx = [
     "webpki-roots_sgx"
 ]
 std = [
+    "log/std",
     "unicase",
     "rustls",
     "webpki",
