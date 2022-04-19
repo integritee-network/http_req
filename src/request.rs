@@ -871,11 +871,9 @@ impl<'a> Request<'a> {
         self
     }
 
-    ///Sends HTTP request.
-    ///
-    ///Creates `TcpStream` (and wraps it with `TlsStream` if needed). Writes request message
-    ///to created stream. Returns response for this request. Writes response's body to `writer`.
-    ///
+    /// Sends HTTP request.
+    /// Default send method: For https requests, the default trusted server's certificates are provided
+    /// by the default tls configuration : tls::Config::default()
     ///# Examples
     ///```
     ///use http_req::{request::Request, uri::Uri};
@@ -887,40 +885,46 @@ impl<'a> Request<'a> {
     ///let response = Request::new(&uri).send(&mut writer).unwrap();
     ///```
     pub fn send<T: Write>(&self, writer: &mut T) -> Result<Response, error::Error> {
-        let host = self.inner.uri.host().unwrap_or("");
-        let port = self.inner.uri.corr_port();
-        let mut stream = match self.connect_timeout {
-            Some(timeout) => connect_timeout(host, port, timeout)?,
-            None => TcpStream::connect((host, port))?,
-        };
-
-        stream.set_read_timeout(self.read_timeout)?;
-        stream.set_write_timeout(self.write_timeout)?;
-
         if self.inner.uri.scheme() == "https" {
             let mut cnf = tls::Config::default();
             let cnf = match self.root_cert_file_pem {
                 Some(p) => cnf.add_root_cert_file_pem(p)?,
                 None => &mut cnf,
             };
-            let mut stream = cnf.connect(host, stream)?;
-            self.inner.send(&mut stream, writer)
+            self.send_with_config(writer, Some(cnf))
         } else {
-            self.inner.send(&mut stream, writer)
+            self.send_with_config(writer, None)
         }
     }
 
-    ///Sends HTTP request.The connection will only be established if the supplied certificate
-    ///matches the server's root certificate.
-    ///Supply the content of the server's root certificate as a String. There are no predefined trusted
-    ///root certificates in the tls config.
-    ///
-    ///Creates `TcpStream` (and wraps it with `TlsStream` if needed). Writes request message
-    ///to created stream. Returns response for this request. Writes response's body to `writer`.
+    /// Sends a HTTPs request. The connection will only be established if the supplied certificate
+    /// matches the server's root certificate.
+    /// Supply the content of the server's root certificate as a String. There are no predefined trusted
+    /// root certificates in the tls config.
     pub fn send_with_pem_certificate<T: Write>(
         &self,
         writer: &mut T,
         certificate_content: Option<String>,
+    ) -> Result<Response, error::Error> {
+        if self.inner.uri.scheme() == "https" {
+            let mut cnf = tls::Config::empty_root_store();
+            let cnf = match certificate_content {
+                Some(c) => cnf.add_root_cert_content_pem_file(&c)?,
+                None => &mut cnf,
+            };
+            self.send_with_config(writer, Some(cnf))
+        } else {
+            println!("Send with certificate, but not a https request!");
+            Err(error::Error::Tls)
+        }
+    }
+
+    /// Sends a HTTP request.
+    /// For https requests a tls configuration must be provided
+    pub fn send_with_config<T: Write>(
+        &self,
+        writer: &mut T,
+        config: Option<&tls::Config>,
     ) -> Result<Response, error::Error> {
         let host = self.inner.uri.host().unwrap_or("");
         let port = self.inner.uri.corr_port();
@@ -933,12 +937,12 @@ impl<'a> Request<'a> {
         stream.set_write_timeout(self.write_timeout)?;
 
         if self.inner.uri.scheme() == "https" {
-            let mut cnf = tls::Config::empty_root_store();
-            let cnf = match certificate_content {
-                Some(c) => cnf.add_root_cert_content_pem_file(&c)?,
-                None => &mut cnf,
-            };
-            let mut stream = cnf.connect(host, stream)?;
+            let mut stream = config
+                .ok_or_else(|| {
+                    println!("No tls config defined for the https request!");
+                    error::Error::Tls
+                })?
+                .connect(host, stream)?;
             self.inner.send(&mut stream, writer)
         } else {
             self.inner.send(&mut stream, writer)
